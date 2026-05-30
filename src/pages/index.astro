@@ -1,5 +1,15 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import Nav from '../components/Nav.astro';
+import { getCollection } from 'astro:content';
+
+const recentPosts = (await getCollection('blog', ({ data }) => !data.draft))
+  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
+  .slice(0, 3);
+
+function formatDate(date: Date) {
+  return date.toLocaleDateString('en-SG', { year: 'numeric', month: 'short', day: 'numeric' });
+}
 
 const experience = [
   {
@@ -88,6 +98,7 @@ const education = [
 ---
 
 <BaseLayout title="Karan Bhalodiya – Lead Software Engineer">
+  <Nav active="home" />
   <main>
     <!-- Header -->
     <header>
@@ -191,6 +202,28 @@ const education = [
               </div>
               <span class="edu-period">{edu.period}</span>
             </div>
+          ))}
+        </div>
+      </section>
+
+      <!-- Latest Posts -->
+      <section>
+        <div class="section-title-row">
+          <h2 class="section-title">Latest Posts</h2>
+          <a href="/blog" class="view-all">View all →</a>
+        </div>
+        <div class="posts-list">
+          {recentPosts.map(post => (
+            <a href={`/blog/${post.id}`} class="post-card">
+              <div class="post-card-meta">
+                <time datetime={post.data.pubDate.toISOString()}>{formatDate(post.data.pubDate)}</time>
+                <div class="tag-list">
+                  {post.data.tags.slice(0, 2).map(tag => <span class="tag tag--small">{tag}</span>)}
+                </div>
+              </div>
+              <p class="post-card-title">{post.data.title}</p>
+              <p class="post-card-desc">{post.data.description}</p>
+            </a>
           ))}
         </div>
       </section>
@@ -466,6 +499,68 @@ const education = [
     border: 1px solid rgba(99,102,241,0.15);
     padding: 0.25rem 0.75rem;
     border-radius: 50px;
+  }
+
+  /* Latest Posts */
+  .section-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 1px solid rgba(99,102,241,0.2);
+  }
+  .section-title-row .section-title { margin-bottom: 0; border-bottom: none; padding-bottom: 0; }
+  .view-all {
+    font-size: 0.825rem;
+    font-weight: 600;
+    color: #6366f1;
+    text-decoration: none;
+    transition: opacity 0.15s;
+  }
+  .view-all:hover { opacity: 0.75; text-decoration: none; }
+
+  .posts-list { display: flex; flex-direction: column; gap: 1rem; }
+
+  .post-card {
+    display: block;
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    border-radius: 16px;
+    padding: 1.25rem 1.5rem;
+    text-decoration: none;
+    color: inherit;
+    transition: background 0.2s, box-shadow 0.2s, transform 0.2s;
+    transform: translateZ(0);
+  }
+  .post-card:hover {
+    background: var(--glass-bg-hover);
+    box-shadow: 0 10px 30px rgba(99,102,241,0.12);
+    transform: translateY(-2px) translateZ(0);
+    text-decoration: none;
+  }
+  .post-card-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.5rem;
+  }
+  .post-card-meta time { font-size: 0.75rem; color: #71717a; }
+  .post-card-title {
+    font-size: 0.975rem;
+    font-weight: 600;
+    color: #18181b;
+    line-height: 1.4;
+    margin-bottom: 0.35rem;
+  }
+  .post-card-desc {
+    font-size: 0.85rem;
+    color: #52525b;
+    line-height: 1.6;
   }
 
   @media (max-width: 640px) {

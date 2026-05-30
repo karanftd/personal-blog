@@ -1,0 +1,45 @@
+---
+const { active } = Astro.props;
+---
+
+<nav class="site-nav">
+  <a href="/" class={active === 'home' ? 'nav-link active' : 'nav-link'}>Home</a>
+  <a href="/blog" class={active === 'blog' ? 'nav-link active' : 'nav-link'}>Blog</a>
+</nav>
+
+<style>
+  .site-nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    gap: 0.25rem;
+    padding: 0.75rem 1.5rem;
+    background: rgba(240, 242, 255, 0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(200, 205, 255, 0.5);
+    max-width: 900px;
+    margin: 0 auto;
+    border-radius: 0 0 16px 16px;
+  }
+  .nav-link {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #52525b;
+    padding: 0.35rem 0.85rem;
+    border-radius: 50px;
+    transition: all 0.15s;
+    text-decoration: none;
+  }
+  .nav-link:hover {
+    background: rgba(99,102,241,0.1);
+    color: #6366f1;
+    text-decoration: none;
+  }
+  .nav-link.active {
+    background: rgba(99,102,241,0.12);
+    color: #6366f1;
+    font-weight: 600;
+  }
+</style>
