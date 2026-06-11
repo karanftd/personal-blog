@@ -1,0 +1,362 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Nav from '../components/Nav.astro';
+
+const experience = [
+  {
+    role: "Lead Software Engineer",
+    company: "Pelago by Singapore Airlines",
+    location: "Singapore",
+    period: "Apr 2020 – Present",
+    summary: "Led multiple high-performing engineering initiatives across the Pelago platform from its inception, encompassing the core transactional system (0-to-1 build), global marketplace expansion, and user retention/growth features.",
+    tech: ["Python", "Flask", "Celery", "Redis", "PostgreSQL", "AWS ECS", "Ansible", "CircleCI", "ElasticSearch", "Apollo GraphQL", "Firebase"],
+    highlights: [
+      "Led a <strong>team of 5 engineers</strong> to design and deliver customer retention and growth systems, increasing annual retention from ~1% to <strong>8–10%</strong> (<strong>10× improvement</strong>).",
+      "Built <strong>revenue-generating growth loops</strong> (referrals, gift cards, affiliate APIs), contributing <strong>$1M+ GMV</strong> in FY 2024–2025.",
+      "Architected a <strong>distributed communication platform</strong> integrating SendGrid, Twilio, and Firebase with retry, idempotency, and failure recovery via <strong>Kafka</strong>.",
+      "Designed <strong>event-driven workflows</strong> using Celery + Redis to process <strong>~50K+ async jobs/day</strong> with <strong>~200ms processing latency</strong>.",
+      "Led <strong>LLM-based feature development</strong> (itinerary generation, content automation) — reduced manual content effort by <strong>60%</strong>, improved delivery speed by <strong>2×</strong>.",
+      "Introduced <strong>AI-assisted engineering workflows</strong> (code review, test generation, security checks), improving team throughput by <strong>35%</strong>.",
+      "Led integration of multiple <strong>global inventory providers</strong> (BeMyGuest, GlobalTix, Rezdy, Viator) — enabling expansion to <strong>60+ countries</strong>, <strong>3,200+ destinations</strong>, and <strong>190K+ products</strong>.",
+      "Designed and implemented a <strong>personalised promotion engine</strong> using ML-driven targeting — increased bookings <strong>30×</strong> over 6 months, reduced coupon abuse by <strong>30%</strong>.",
+      "Designed a <strong>state-machine-based booking and payment system</strong> integrating <strong>Stripe</strong> and <strong>KrisFlyer Miles</strong> wallet.",
+      "Developed a <strong>multi-currency checkout system</strong> supporting <strong>12+ currencies</strong> for global market expansion.",
+    ],
+  },
+  {
+    role: "Sr. Software Engineer (Engineering Productivity)",
+    company: "DataRobot",
+    location: "Singapore",
+    period: "Mar 2019 – Apr 2020",
+    summary: "Joined to build an internal developer platform as DataRobot scaled to 500+ engineers globally; focused on CI/CD reliability, cost optimisation, and developer tooling.",
+    tech: ["Java", "Spring Boot", "Vue.js", "PostgreSQL", "Redis", "AWS Lambda", "API Gateway", "DynamoDB", "Jenkins"],
+    highlights: [
+      "Built an <strong>automated code review workflow system</strong> on AWS Lambda integrating Jira, GitHub, Jenkins, and Slack — reduced PR review time from <strong>72 hours → under 24 hours</strong>.",
+      "Reduced <strong>AWS expenditure by ~40%</strong> through internal productivity tools and automated dev workflows.",
+      "Developed a <strong>flake detection and quarantine system</strong>, slashing infrastructure expenditure by <strong>~$750/day</strong>.",
+      "Built <strong>developer-facing dashboards</strong> (Spring Boot + Vue.js) for build health, PR status, and flake visibility.",
+    ],
+  },
+  {
+    role: "Software Engineer",
+    company: "Shopback",
+    location: "Singapore",
+    period: "Apr 2018 – Feb 2019",
+    summary: "Designed & developed microservices-based RESTful APIs using NodeJS and MongoDB for Shopback GO.",
+    tech: ["Node.js", "MongoDB", "AWS ECS", "Docker"],
+    highlights: [
+      "Designed <strong>microservices-based RESTful APIs</strong> for the Shopback GO mobile platform, supporting <strong>millions of daily transactions</strong> at launch.",
+      "Created a reusable shared module library and enforced standards via code reviews — maintaining <strong>94%+ code coverage</strong>.",
+    ],
+  },
+  {
+    role: "Solution Engineer",
+    company: "eInfochips (an Arrow Company)",
+    location: "Ahmedabad, India",
+    period: "Oct 2016 – Mar 2018",
+    tech: ["Java", "Spring Boot", "MySQL", "Redis", "Jenkins", "React"],
+    highlights: [
+      "Introduced <strong>Git flow</strong>, <strong>Docker containerisation</strong>, and full <strong>CI/CD pipelines</strong>, accelerating release velocity by <strong>60%</strong>.",
+      "Led migration from <strong>monolithic architecture to microservices</strong>, cutting deployment time by <strong>3×</strong> and enabling faster feature releases.",
+    ],
+  },
+  {
+    role: "Software Engineer",
+    company: "Azoi Inc.",
+    location: "Ahmedabad, India",
+    period: "Jun 2012 – Oct 2016",
+    tech: ["Python", "Flask", "React", "Celery", "Redis", "PostgreSQL", "Jenkins", "Stripe"],
+    highlights: [
+      "Built <strong>RESTful APIs</strong> (Flask, MongoDB, Celery, Redis) for a <strong>real-time health monitoring platform</strong> handling sensitive medical data.",
+      "Optimised data transmission using <strong>Protobuf</strong> and <strong>gzip compression</strong>, reducing response time by <strong>~300ms</strong>.",
+    ],
+  },
+];
+
+const skills = {
+  "Infrastructure": ["AWS", "GCP", "Kubernetes", "NGINX", "Docker", "Kafka", "RabbitMQ", "Heroku", "Jenkins", "Gitlab"],
+  "Backend / Frontend": ["Python", "NodeJS", "Java", "ReactJS", "CSS", "HTML"],
+  "Protocols": ["REST", "GraphQL", "gRPC"],
+  "Datastores": ["PostgreSQL", "MongoDB", "MySQL", "Redis"],
+  "AI / ML": ["OpenAI GPT-4o", "Claude (Anthropic)", "Gemini Pro", "Pinecone", "pgvector", "GitHub Copilot", "Cursor"],
+  "Certifications": ["AWS Developer Associate"],
+};
+
+const education = [
+  { degree: "MCA", school: "Visvesvaraya Technological University (VTU)", location: "Bangalore, India", period: "2009–2012" },
+  { degree: "BCA", school: "Saurashtra University", location: "Gujarat, India", period: "2006–2009" },
+];
+---
+
+<BaseLayout title="Resume – Karan Bhalodiya">
+  <Nav active="resume" />
+  <main>
+
+    <header>
+      <div class="resume-header">
+        <div>
+          <h1>Karan Bhalodiya</h1>
+          <p class="title">Lead Software Engineer · Singapore</p>
+        </div>
+        <a href="/Karan-Bhalodiya-Resume.pdf" download class="download-btn">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download Resume
+        </a>
+      </div>
+    </header>
+
+    <div class="page">
+
+      <section>
+        <h2 class="section-title">Summary</h2>
+        <div class="card">
+          <p class="summary-text">
+            Results-driven Lead Software Engineer with 12+ years of experience, including significant tenure in high-growth,
+            product-based startups and 0-to-1 platform builds. Proven track record of architecting scalable distributed
+            systems, driving engineering productivity, and leading high-performing teams in fast-paced environments.
+            Adept at bridging the gap between complex technical execution and strategic product goals to deliver
+            user-centric features and millions in rapid revenue growth.
+          </p>
+        </div>
+      </section>
+
+      <section>
+        <h2 class="section-title">Skills</h2>
+        <div class="skills-grid">
+          {Object.entries(skills).map(([category, items]) => (
+            <div class="card skill-card">
+              <span class="skill-category">{category}</span>
+              <div class="tag-list">
+                {items.map(item => <span class="tag">{item}</span>)}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section>
+        <h2 class="section-title">Work Experience</h2>
+        <div class="experience-list">
+          {experience.map((job) => (
+            <article class="card">
+              <div class="job-header">
+                <div>
+                  <h3 class="job-role">{job.role}</h3>
+                  <div class="job-meta">
+                    <span class="job-company">{job.company}</span>
+                    <span class="sep">·</span>
+                    <span class="job-location">{job.location}</span>
+                  </div>
+                </div>
+                <span class="job-period">{job.period}</span>
+              </div>
+              {job.summary && <p class="job-summary">{job.summary}</p>}
+              <div class="tag-list job-tech">
+                {job.tech.map(t => <span class="tag tag--small">{t}</span>)}
+              </div>
+              <ul class="highlight-list">
+                {job.highlights.map(h => <li set:html={h} />)}
+              </ul>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section>
+        <h2 class="section-title">Education</h2>
+        <div class="edu-list">
+          {education.map(edu => (
+            <div class="card edu-item">
+              <div>
+                <span class="edu-degree">{edu.degree}</span>
+                <span class="edu-school">{edu.school}</span>
+                <span class="edu-location">{edu.location}</span>
+              </div>
+              <span class="job-period">{edu.period}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+    </div>
+  </main>
+</BaseLayout>
+
+<style>
+  main {
+    position: relative;
+    z-index: 1;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 1.5rem 5rem;
+  }
+
+  header { padding: 3rem 0 1rem; }
+  .resume-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+  h1 {
+    font-size: 2.25rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: var(--color-text);
+  }
+  .title {
+    font-size: 1rem;
+    color: var(--color-accent);
+    font-weight: 500;
+    margin-top: 0.3rem;
+  }
+  .download-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    background: #ffff00;
+    color: #000;
+    font-size: 0.875rem;
+    font-weight: 700;
+    padding: 0.6rem 1.25rem;
+    border-radius: 50px;
+    text-decoration: none;
+    transition: all 0.2s;
+    box-shadow: 0 0 16px rgba(255,255,0,0.3);
+    white-space: nowrap;
+  }
+  .download-btn:hover {
+    background: #e8e800;
+    box-shadow: 0 0 24px rgba(255,255,0,0.5);
+    transform: translateY(-1px);
+    text-decoration: none;
+  }
+
+  .page { display: flex; flex-direction: column; gap: 2.5rem; margin-top: 1rem; }
+
+  .section-title {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-accent);
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 1px solid rgba(255, 255, 0, 0.2);
+  }
+
+  .card {
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    border-radius: 18px;
+    padding: 1.5rem;
+    transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+    transform: translateZ(0);
+  }
+  .card:hover {
+    background: var(--glass-bg-hover);
+    border-color: rgba(255, 255, 0, 0.32);
+    box-shadow: 0 0 24px rgba(255,255,0,0.08), 0 8px 32px rgba(0,0,0,0.5);
+  }
+
+  .summary-text { color: var(--color-muted); font-size: 0.975rem; line-height: 1.8; }
+
+  .tag-list { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .tag {
+    background: rgba(255, 255, 0, 0.07);
+    border: 1px solid rgba(255, 255, 0, 0.2);
+    color: #ffff00;
+    font-size: 0.78rem;
+    padding: 0.22rem 0.7rem;
+    border-radius: 50px;
+  }
+  .tag--small { font-size: 0.7rem; padding: 0.15rem 0.55rem; }
+
+  .skills-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 1rem;
+  }
+  .skill-card { display: flex; flex-direction: column; gap: 0.65rem; padding: 1rem 1.2rem; }
+  .skill-category {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-accent);
+  }
+
+  .experience-list { display: flex; flex-direction: column; gap: 1.5rem; }
+  .job-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+    flex-wrap: wrap;
+  }
+  .job-role { font-size: 1rem; font-weight: 600; color: var(--color-text); }
+  .job-meta { display: flex; align-items: center; gap: 0.4rem; margin-top: 0.25rem; }
+  .job-company { font-size: 0.875rem; color: var(--color-accent); font-weight: 500; }
+  .sep { color: var(--color-subtle); }
+  .job-location { font-size: 0.875rem; color: var(--color-muted); }
+  .job-period {
+    font-size: 0.75rem;
+    color: var(--color-muted);
+    white-space: nowrap;
+    background: rgba(255, 255, 0, 0.07);
+    border: 1px solid rgba(255, 255, 0, 0.18);
+    padding: 0.25rem 0.75rem;
+    border-radius: 50px;
+  }
+  .job-summary {
+    font-size: 0.875rem;
+    color: var(--color-muted);
+    font-style: italic;
+    margin-bottom: 0.85rem;
+    line-height: 1.65;
+  }
+  .job-tech { margin-bottom: 1rem; }
+  .highlight-list { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; }
+  .highlight-list li {
+    font-size: 0.875rem;
+    color: var(--color-muted);
+    line-height: 1.7;
+    padding-left: 1.1rem;
+    position: relative;
+  }
+  .highlight-list li::before {
+    content: "▸";
+    position: absolute;
+    left: 0;
+    color: var(--color-accent);
+    font-size: 0.7rem;
+    top: 0.22rem;
+  }
+  .highlight-list li :global(strong) { color: var(--color-text); font-weight: 600; }
+
+  .edu-list { display: flex; flex-direction: column; gap: 0.75rem; }
+  .edu-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.25rem;
+    border-radius: 14px;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  .edu-degree { font-weight: 600; font-size: 0.9rem; color: var(--color-text); margin-right: 0.5rem; }
+  .edu-school { font-size: 0.875rem; color: var(--color-accent); margin-right: 0.5rem; }
+  .edu-location { font-size: 0.8rem; color: var(--color-muted); }
+
+  @media (max-width: 640px) {
+    h1 { font-size: 1.75rem; }
+    .resume-header { flex-direction: column; }
+    .skills-grid { grid-template-columns: 1fr; }
+    .job-header { flex-direction: column; }
+  }
+</style>

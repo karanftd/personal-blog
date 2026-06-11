@@ -1,573 +1,105 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Nav from '../components/Nav.astro';
-import { getCollection } from 'astro:content';
 
-const recentPosts = (await getCollection('blog', ({ data }) => !data.draft))
-  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
-  .slice(0, 3);
-
-function formatDate(date: Date) {
-  return date.toLocaleDateString('en-SG', { year: 'numeric', month: 'short', day: 'numeric' });
-}
-
-const experience = [
-  {
-    role: "Lead Software Engineer",
-    company: "Pelago by Singapore Airlines",
-    location: "Singapore",
-    period: "Apr 2020 – Present",
-    summary: "Led multiple high-performing engineering initiatives across the Pelago platform from its inception, encompassing the core transactional system (0-to-1 build), global marketplace expansion, and user retention/growth features.",
-    tech: ["Python", "Flask", "Celery", "Redis", "PostgreSQL", "AWS ECS", "Ansible", "CircleCI", "ElasticSearch", "Apollo GraphQL", "Firebase"],
-    highlights: [
-      "Led a <strong>team of 5 engineers</strong> to design and deliver customer retention and growth systems, increasing annual retention from ~1% to <strong>8–10%</strong> (<strong>10× improvement</strong>).",
-      "Built <strong>revenue-generating growth loops</strong> (referrals, gift cards, affiliate APIs), contributing <strong>$1M+ GMV</strong> in FY 2024–2025.",
-      "Architected a <strong>distributed communication platform</strong> integrating SendGrid, Twilio, and Firebase with retry, idempotency, and failure recovery via <strong>Kafka</strong>.",
-      "Designed <strong>event-driven workflows</strong> using Celery + Redis to process <strong>~50K+ async jobs/day</strong> with <strong>~200ms processing latency</strong>.",
-      "Led <strong>LLM-based feature development</strong> (itinerary generation, content automation) — reduced manual content effort by <strong>60%</strong>, improved delivery speed by <strong>2×</strong>.",
-      "Introduced <strong>AI-assisted engineering workflows</strong> (code review, test generation, security checks), improving team throughput by <strong>35%</strong>.",
-      "Led integration of multiple <strong>global inventory providers</strong> (BeMyGuest, GlobalTix, Rezdy, Viator) — enabling expansion to <strong>60+ countries</strong>, <strong>3,200+ destinations</strong>, and <strong>190K+ products</strong>.",
-      "Designed and implemented a <strong>personalised promotion engine</strong> using ML-driven targeting — increased bookings <strong>30×</strong> over 6 months, reduced coupon abuse by <strong>30%</strong>.",
-      "Designed a <strong>state-machine-based booking and payment system</strong> integrating <strong>Stripe</strong> and <strong>KrisFlyer Miles</strong> wallet.",
-      "Developed a <strong>multi-currency checkout system</strong> supporting <strong>12+ currencies</strong> for global market expansion.",
-    ],
-  },
-  {
-    role: "Sr. Software Engineer (Engineering Productivity)",
-    company: "DataRobot",
-    location: "Singapore",
-    period: "Mar 2019 – Apr 2020",
-    summary: "Joined to build an internal developer platform as DataRobot scaled to 500+ engineers globally; focused on CI/CD reliability, cost optimisation, and developer tooling.",
-    tech: ["Java", "Spring Boot", "Vue.js", "PostgreSQL", "Redis", "AWS Lambda", "API Gateway", "DynamoDB", "Jenkins"],
-    highlights: [
-      "Built an <strong>automated code review workflow system</strong> on AWS Lambda integrating Jira, GitHub, Jenkins, and Slack — reduced PR review time from <strong>72 hours → under 24 hours</strong>.",
-      "Reduced <strong>AWS expenditure by ~40%</strong> through internal productivity tools and automated dev workflows.",
-      "Developed a <strong>flake detection and quarantine system</strong>, slashing infrastructure expenditure by <strong>~$750/day</strong>.",
-      "Built <strong>developer-facing dashboards</strong> (Spring Boot + Vue.js) for build health, PR status, and flake visibility.",
-    ],
-  },
-  {
-    role: "Software Engineer",
-    company: "Shopback",
-    location: "Singapore",
-    period: "Apr 2018 – Feb 2019",
-    summary: "Designed & developed microservices-based RESTful APIs using NodeJS and MongoDB for Shopback GO.",
-    tech: ["Node.js", "MongoDB", "AWS ECS", "Docker"],
-    highlights: [
-      "Designed <strong>microservices-based RESTful APIs</strong> for the Shopback GO mobile platform, supporting <strong>millions of daily transactions</strong> at launch.",
-      "Created a reusable shared module library and enforced standards via code reviews — maintaining <strong>94%+ code coverage</strong>.",
-    ],
-  },
-  {
-    role: "Solution Engineer",
-    company: "eInfochips (an Arrow Company)",
-    location: "Ahmedabad, India",
-    period: "Oct 2016 – Mar 2018",
-    tech: ["Java", "Spring Boot", "MySQL", "Redis", "Jenkins", "React"],
-    highlights: [
-      "Introduced <strong>Git flow</strong>, <strong>Docker containerisation</strong>, and full <strong>CI/CD pipelines</strong>, accelerating release velocity by <strong>60%</strong>.",
-      "Led migration from <strong>monolithic architecture to microservices</strong>, cutting deployment time by <strong>3×</strong> and enabling faster feature releases.",
-    ],
-  },
-  {
-    role: "Software Engineer",
-    company: "Azoi Inc.",
-    location: "Ahmedabad, India",
-    period: "Jun 2012 – Oct 2016",
-    tech: ["Python", "Flask", "React", "Celery", "Redis", "PostgreSQL", "Jenkins", "Stripe"],
-    highlights: [
-      "Built <strong>RESTful APIs</strong> (Flask, MongoDB, Celery, Redis) for a <strong>real-time health monitoring platform</strong> handling sensitive medical data.",
-      "Optimised data transmission using <strong>Protobuf</strong> and <strong>gzip compression</strong>, reducing response time by <strong>~300ms</strong>.",
-    ],
-  },
-];
-
-const skills = {
-  "Infrastructure": ["AWS", "GCP", "Kubernetes", "NGINX", "Docker", "Kafka", "RabbitMQ", "Heroku", "Jenkins", "Gitlab"],
-  "Backend / Frontend": ["Python", "NodeJS", "Java", "ReactJS", "CSS", "HTML"],
-  "Protocols": ["REST", "GraphQL", "gRPC"],
-  "Datastores": ["PostgreSQL", "MongoDB", "MySQL", "Redis"],
-  "AI / ML": ["OpenAI GPT-4o", "Claude (Anthropic)", "Gemini Pro", "Pinecone", "pgvector", "GitHub Copilot", "Cursor"],
-  "Certifications": ["AWS Developer Associate"],
-};
-
-const education = [
-  { degree: "MCA", school: "Visvesvaraya Technological University (VTU)", location: "Bangalore, India", period: "2009–2012" },
-  { degree: "BCA", school: "Saurashtra University", location: "Gujarat, India", period: "2006–2009" },
-];
+const marqueeText = Array(10).fill('Built with Love & AI').join('  ✦  ') + '  ✦  ';
 ---
 
 <BaseLayout title="Karan Bhalodiya – Lead Software Engineer">
   <Nav active="home" />
-  <main>
-    <!-- Header -->
-    <header>
-      <div class="header-inner">
-        <div class="header-text">
-          <h1>Karan Bhalodiya</h1>
-          <p class="title">Lead Software Engineer</p>
-          <p class="location">Singapore</p>
-        </div>
-        <nav class="contact-links">
-          <a href="/Karan-Bhalodiya-Resume.pdf" download class="download-btn" aria-label="Download Resume">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Download Resume
-          </a>
-          <a href="mailto:karan.bhalodiya@gmail.com" aria-label="Email">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
-            karan.bhalodiya@gmail.com
-          </a>
-          <a href="https://www.linkedin.com/in/karanftd/" target="_blank" rel="noopener" aria-label="LinkedIn">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></svg>
-            LinkedIn
-          </a>
-          <a href="tel:+6587769565" aria-label="Phone">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.15 12 19.79 19.79 0 0 1 1.08 3.41 2 2 0 0 1 3.07 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 8.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-            +65 8776 9565
-          </a>
-        </nav>
-      </div>
-    </header>
 
-    <div class="page">
+  <div class="page-fill">
+  <section class="hero" aria-labelledby="hero-name">
+    <h1 id="hero-name">Karan Bhalodiya</h1>
+    <p class="hero-title">Lead Software Engineer</p>
+    <p class="hero-location">Singapore</p>
+  </section>
 
-      <!-- Summary -->
-      <section>
-        <h2 class="section-title">Summary</h2>
-        <div class="summary-card">
-          <p class="summary-text">
-            Results-driven Lead Software Engineer with 12+ years of experience, including significant tenure in high-growth,
-            product-based startups and 0-to-1 platform builds. Proven track record of architecting scalable distributed
-            systems, driving engineering productivity, and leading high-performing teams in fast-paced environments.
-            Adept at bridging the gap between complex technical execution and strategic product goals to deliver
-            user-centric features and millions in rapid revenue growth.
-          </p>
-        </div>
-      </section>
-
-      <!-- Skills -->
-      <section>
-        <h2 class="section-title">Skills</h2>
-        <div class="skills-grid">
-          {Object.entries(skills).map(([category, items]) => (
-            <div class="skill-card">
-              <span class="skill-category">{category}</span>
-              <div class="tag-list">
-                {items.map(item => <span class="tag">{item}</span>)}
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <!-- Experience -->
-      <section>
-        <h2 class="section-title">Work Experience</h2>
-        <div class="experience-list">
-          {experience.map((job) => (
-            <article class="job-card">
-              <div class="job-header">
-                <div>
-                  <h3 class="job-role">{job.role}</h3>
-                  <div class="job-meta">
-                    <span class="job-company">{job.company}</span>
-                    <span class="separator">·</span>
-                    <span class="job-location">{job.location}</span>
-                  </div>
-                </div>
-                <span class="job-period">{job.period}</span>
-              </div>
-              {job.summary && <p class="job-summary">{job.summary}</p>}
-              <div class="tag-list job-tech">
-                {job.tech.map(t => <span class="tag tag--small">{t}</span>)}
-              </div>
-              <ul class="highlight-list">
-                {job.highlights.map(h => <li set:html={h} />)}
-              </ul>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <!-- Education -->
-      <section>
-        <h2 class="section-title">Education</h2>
-        <div class="edu-list">
-          {education.map(edu => (
-            <div class="edu-item">
-              <div>
-                <span class="edu-degree">{edu.degree}</span>
-                <span class="edu-school">{edu.school}</span>
-                <span class="edu-location">{edu.location}</span>
-              </div>
-              <span class="edu-period">{edu.period}</span>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <!-- Latest Posts -->
-      <section>
-        <div class="section-title-row">
-          <h2 class="section-title">Latest Posts</h2>
-          <a href="/blog" class="view-all">View all →</a>
-        </div>
-        <div class="posts-list">
-          {recentPosts.map(post => (
-            <a href={`/blog/${post.id}`} class="post-card">
-              <div class="post-card-meta">
-                <time datetime={post.data.pubDate.toISOString()}>{formatDate(post.data.pubDate)}</time>
-                <div class="tag-list">
-                  {post.data.tags.slice(0, 2).map(tag => <span class="tag tag--small">{tag}</span>)}
-                </div>
-              </div>
-              <p class="post-card-title">{post.data.title}</p>
-              <p class="post-card-desc">{post.data.description}</p>
-            </a>
-          ))}
-        </div>
-      </section>
-
+  <div class="marquee-band" aria-hidden="true">
+    <div class="marquee-track">
+      <span class="marquee-content">{marqueeText}</span>
+      <span class="marquee-content">{marqueeText}</span>
     </div>
-  </main>
+  </div>
+  </div>
 </BaseLayout>
 
 <style>
-  main {
+  .page-fill {
+    min-height: 100vh;
+    background: #ffff00;
+    display: flex;
+    flex-direction: column;
     position: relative;
     z-index: 1;
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 0 1.5rem 5rem;
   }
 
-  /* Header */
-  header {
-    padding: 3rem 0 1rem;
-    margin-bottom: 1rem;
-  }
-  .header-inner {
+  .hero {
+    flex: 1;
+    width: 100%;
+    padding: clamp(5rem, 10vw, 9rem) 1.5rem clamp(4rem, 8vw, 8rem);
+    text-align: center;
     display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 2rem;
-    flex-wrap: wrap;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
   }
+
   h1 {
-    font-size: 2.5rem;
-    font-weight: 700;
-    letter-spacing: -0.03em;
-    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #0ea5e9 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    font-size: clamp(3.5rem, 11vw, 9rem);
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 1;
+    color: #000;
   }
-  .title {
-    font-size: 1.05rem;
-    color: var(--color-accent);
-    font-weight: 500;
-    margin-top: 0.3rem;
-  }
-  .location {
-    font-size: 0.875rem;
-    color: var(--color-muted);
-    margin-top: 0.2rem;
-    display: flex;
-    align-items: center;
-    gap: 0.3rem;
-  }
-  .contact-links {
-    display: flex;
-    flex-direction: column;
-    gap: 0.55rem;
-    align-items: flex-end;
-  }
-  .contact-links a {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    font-size: 0.825rem;
-    color: var(--color-muted);
-    transition: color 0.2s;
-  }
-  .contact-links a:hover { color: var(--color-accent); text-decoration: none; }
 
-  .download-btn {
-    display: flex;
-    align-items: center;
-    gap: 0.45rem;
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
-    border: none;
-    color: #fff !important;
-    font-size: 0.825rem;
+  .hero-title {
+    font-size: clamp(1rem, 2.5vw, 1.6rem);
     font-weight: 600;
-    padding: 0.5rem 1.1rem;
-    border-radius: 50px;
-    transition: all 0.2s;
-    margin-bottom: 0.3rem;
-    box-shadow: 0 4px 15px rgba(99,102,241,0.35);
-  }
-  .download-btn:hover {
-    box-shadow: 0 6px 20px rgba(99,102,241,0.5);
-    transform: translateY(-1px);
-    text-decoration: none;
+    color: #1a1a1a;
+    margin-top: 1rem;
   }
 
-  /* Page layout */
-  .page { display: flex; flex-direction: column; gap: 2.5rem; }
-
-  /* Section titles */
-  .section-title {
-    font-size: 0.7rem;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--color-accent);
-    margin-bottom: 1.25rem;
-    padding-bottom: 0.6rem;
-    border-bottom: 1px solid rgba(99,102,241,0.2);
+  .hero-location {
+    font-size: 1rem;
+    color: #2a2a2a;
+    margin-top: 0.4rem;
+    opacity: 0.7;
   }
 
-  /* Summary */
-  .summary-card {
-    background: var(--glass-bg);
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
-    border: 1px solid var(--glass-border);
-    box-shadow: var(--glass-shadow);
-    border-radius: 18px;
-    padding: 1.5rem;
-    transition: background 0.2s;
-    transform: translateZ(0);
-  }
-  .summary-card:hover { background: var(--glass-bg-hover); }
-  .summary-text {
-    color: var(--color-muted);
-    font-size: 0.975rem;
-    line-height: 1.8;
-  }
-
-  /* Tags */
-  .tag-list { display: flex; flex-wrap: wrap; gap: 0.4rem; }
-  .tag {
-    background: rgba(99,102,241,0.08);
-    border: 1px solid rgba(99,102,241,0.2);
-    color: #4338ca;
-    font-size: 0.78rem;
-    padding: 0.22rem 0.7rem;
-    border-radius: 50px;
-    transition: all 0.15s;
-  }
-  .tag:hover {
-    background: rgba(99,102,241,0.15);
-    border-color: rgba(99,102,241,0.4);
-  }
-  .tag--small { font-size: 0.7rem; padding: 0.15rem 0.55rem; }
-
-  /* Skills — card grid */
-  .skills-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 1rem;
-  }
-  .skill-card {
-    background: var(--glass-bg);
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
-    border: 1px solid var(--glass-border);
-    box-shadow: var(--glass-shadow);
-    border-radius: 16px;
-    padding: 1rem 1.2rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.65rem;
-    transition: background 0.2s, box-shadow 0.2s;
-    transform: translateZ(0);
-  }
-  .skill-card:hover {
-    background: var(--glass-bg-hover);
-    box-shadow: 0 10px 30px rgba(99,102,241,0.1);
-  }
-  .skill-category {
-    font-size: 0.72rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--color-accent);
-  }
-
-  /* Experience */
-  .experience-list { display: flex; flex-direction: column; gap: 1.5rem; }
-  .job-card {
-    background: var(--glass-bg);
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
-    border: 1px solid var(--glass-border);
-    box-shadow: var(--glass-shadow);
-    border-radius: 18px;
-    padding: 1.5rem;
-    transition: background 0.2s, box-shadow 0.2s;
-    transform: translateZ(0);
-  }
-  .job-card:hover {
-    background: var(--glass-bg-hover);
-    box-shadow: 0 12px 40px rgba(99,102,241,0.1);
-  }
-  .job-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 1rem;
-    margin-bottom: 0.75rem;
-    flex-wrap: wrap;
-  }
-  .job-role { font-size: 1rem; font-weight: 600; color: var(--color-text); }
-  .job-meta { display: flex; align-items: center; gap: 0.4rem; margin-top: 0.25rem; }
-  .job-company { font-size: 0.875rem; color: var(--color-accent); font-weight: 500; }
-  .separator { color: var(--color-subtle); }
-  .job-location { font-size: 0.875rem; color: var(--color-muted); }
-  .job-period {
-    font-size: 0.75rem;
-    color: var(--color-muted);
-    white-space: nowrap;
-    background: rgba(99,102,241,0.07);
-    border: 1px solid rgba(99,102,241,0.15);
-    padding: 0.25rem 0.75rem;
-    border-radius: 50px;
-  }
-  .job-summary {
-    font-size: 0.875rem;
-    color: var(--color-muted);
-    font-style: italic;
-    margin-bottom: 0.85rem;
-    line-height: 1.65;
-  }
-  .job-tech { margin-bottom: 1rem; }
-  .highlight-list {
-    list-style: none;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-  .highlight-list li {
-    font-size: 0.875rem;
-    color: var(--color-muted);
-    line-height: 1.7;
-    padding-left: 1.1rem;
+  .marquee-band {
+    overflow: hidden;
+    background: #0a0a0a;
+    padding: 0.9rem 0;
+    width: 100%;
+    border-top: 1px solid rgba(255, 255, 0, 0.4);
+    border-bottom: 1px solid rgba(255, 255, 0, 0.4);
     position: relative;
-  }
-  .highlight-list li::before {
-    content: "▸";
-    position: absolute;
-    left: 0;
-    color: var(--color-accent);
-    font-size: 0.7rem;
-    top: 0.22rem;
-  }
-  .highlight-list li :global(strong) {
-    color: var(--color-text);
-    font-weight: 600;
+    z-index: 1;
   }
 
-  /* Education */
-  .edu-list { display: flex; flex-direction: column; gap: 0.75rem; }
-  .edu-item {
+  .marquee-track {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: var(--glass-bg);
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
-    border: 1px solid var(--glass-border);
-    box-shadow: var(--glass-shadow);
-    border-radius: 14px;
-    padding: 1rem 1.25rem;
-    gap: 1rem;
-    flex-wrap: wrap;
-    transition: background 0.2s;
-    transform: translateZ(0);
+    width: max-content;
+    animation: marquee-scroll 35s linear infinite;
   }
-  .edu-item:hover { background: var(--glass-bg-hover); }
-  .edu-degree { font-weight: 600; font-size: 0.9rem; color: var(--color-text); margin-right: 0.5rem; }
-  .edu-school { font-size: 0.875rem; color: var(--color-accent); margin-right: 0.5rem; }
-  .edu-location { font-size: 0.8rem; color: var(--color-muted); }
-  .edu-period {
-    font-size: 0.75rem;
-    color: var(--color-muted);
+
+  .marquee-content {
     white-space: nowrap;
-    background: rgba(99,102,241,0.07);
-    border: 1px solid rgba(99,102,241,0.15);
-    padding: 0.25rem 0.75rem;
-    border-radius: 50px;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #ffff00;
+    padding-right: 3rem;
   }
 
-  /* Latest Posts */
-  .section-title-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 1.25rem;
-    padding-bottom: 0.6rem;
-    border-bottom: 1px solid rgba(99,102,241,0.2);
-  }
-  .section-title-row .section-title { margin-bottom: 0; border-bottom: none; padding-bottom: 0; }
-  .view-all {
-    font-size: 0.825rem;
-    font-weight: 600;
-    color: #6366f1;
-    text-decoration: none;
-    transition: opacity 0.15s;
-  }
-  .view-all:hover { opacity: 0.75; text-decoration: none; }
-
-  .posts-list { display: flex; flex-direction: column; gap: 1rem; }
-
-  .post-card {
-    display: block;
-    background: var(--glass-bg);
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
-    border: 1px solid var(--glass-border);
-    box-shadow: var(--glass-shadow);
-    border-radius: 16px;
-    padding: 1.25rem 1.5rem;
-    text-decoration: none;
-    color: inherit;
-    transition: background 0.2s, box-shadow 0.2s, transform 0.2s;
-    transform: translateZ(0);
-  }
-  .post-card:hover {
-    background: var(--glass-bg-hover);
-    box-shadow: 0 10px 30px rgba(99,102,241,0.12);
-    transform: translateY(-2px) translateZ(0);
-    text-decoration: none;
-  }
-  .post-card-meta {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    flex-wrap: wrap;
-    margin-bottom: 0.5rem;
-  }
-  .post-card-meta time { font-size: 0.75rem; color: #71717a; }
-  .post-card-title {
-    font-size: 0.975rem;
-    font-weight: 600;
-    color: #18181b;
-    line-height: 1.4;
-    margin-bottom: 0.35rem;
-  }
-  .post-card-desc {
-    font-size: 0.85rem;
-    color: #52525b;
-    line-height: 1.6;
+  @keyframes marquee-scroll {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
   }
 
-  @media (max-width: 640px) {
-    h1 { font-size: 1.9rem; }
-    .header-inner { flex-direction: column; }
-    .contact-links { align-items: flex-start; }
-    .skills-grid { grid-template-columns: 1fr; }
-    .job-header { flex-direction: column; }
+  @media (prefers-reduced-motion: reduce) {
+    .marquee-track { animation-play-state: paused; }
   }
 </style>
