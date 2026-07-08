@@ -7,7 +7,7 @@ tags: ["llm", "langgraph", "python", "ai", "finance"]
 
 Financial documents are the worst possible input for a language model. They are dense with numbers, tables half-formatted as prose, and questions that chain three or four arithmetic steps across paragraphs that were written years apart. Ask a model "what was the percentage change in net revenue from 2009 to 2010?" and you are really asking it to locate two numbers from a semi-structured table, subtract them, divide by the base, and multiply by 100 — without making a single arithmetic mistake along the way.
 
-That is the core challenge of the **ConvFinQA** dataset, and it is the problem I built a system around as part of a technical assessment for [Tomoro.ai](https://tomoro.ai). This post is a writeup of the decisions that mattered.
+That is the core challenge of the **ConvFinQA** dataset, and it is the problem I built a system around. This post is a writeup of the decisions that mattered.
 
 You can try the live chatbot at **[karanftd.com/chat](https://karanftd.com/chat)**.
 
@@ -146,6 +146,6 @@ The remaining failures are mostly on records with ambiguous column references or
 
 The chatbot is live at **[karanftd.com/chat](https://karanftd.com/chat)**.
 
-The source code was submitted as a feature branch to Tomoro.ai's repository. The hosted demo uses FastAPI with Jinja2 templates, deployed on Railway, exposing the same LangGraph agent over HTTP.
+The hosted demo uses FastAPI with Jinja2 templates, deployed on Railway, exposing the same LangGraph agent over HTTP.
 
 If you are building anything in the financial QA space, the core insight is worth repeating: **do not let the model do arithmetic**. The moment you hand computation to a deterministic tool, a whole class of errors disappears. The model's job is to understand what needs to be computed and to select the right values. A calculator's job is to compute it.
