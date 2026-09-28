@@ -2,7 +2,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Nav from '../components/Nav.astro';
 import Parser from 'rss-parser';
-import { FEED_SOURCES, FEED_TOTAL_LIMIT } from '../data/feeds';
+import { NEWS_FEEDS, BUILDS_FEEDS, NEWS_TOTAL_LIMIT, BUILDS_TOTAL_LIMIT, type FeedSource } from '../data/feeds';
 import todosData from '../data/todos.json';
 
 interface NewsItem {
@@ -24,40 +24,47 @@ interface Todo {
 
 const parser = new Parser({ timeout: 15000 });
 
-// Fetch all feeds in parallel; a failing source is skipped, never fatal.
-const feedResults = await Promise.all(
-  FEED_SOURCES.map(async (src) => {
-    try {
-      // NB: use global fetch + parseString, not parser.parseURL —
-      // rss-parser's parseURL uses node:http, which breaks in the
-      // Cloudflare Workers prerender environment.
-      const res = await fetch(src.url, {
-        headers: { 'user-agent': 'karanftd-feed/1.0 (+https://karanftd.com/feed)' },
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const feed = await parser.parseString(await res.text());
-      return {
-        name: src.name,
-        items: (feed.items || []).slice(0, src.limit ?? 10).map((item) => ({
-          title: item.title ?? '(untitled)',
-          link: item.link ?? '#',
-          source: src.name,
-          pubDate: item.isoDate ? new Date(item.isoDate) : item.pubDate ? new Date(item.pubDate) : null,
-        })),
-      };
-    } catch {
-      return { name: src.name, items: [] as NewsItem[] };
-    }
-  })
-);
+// Fetch a group of feeds in parallel; a failing source is skipped, never fatal.
+async function loadSection(sources: FeedSource[], totalLimit: number) {
+  const results = await Promise.all(
+    sources.map(async (src) => {
+      try {
+        // NB: use global fetch + parseString, not parser.parseURL —
+        // rss-parser's parseURL uses node:http, which breaks in the
+        // Cloudflare Workers prerender environment.
+        const res = await fetch(src.url, {
+          headers: { 'user-agent': 'karanftd-feed/1.0 (+https://karanftd.com/feed)' },
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const feed = await parser.parseString(await res.text());
+        return {
+          name: src.name,
+          items: (feed.items || []).slice(0, src.limit ?? 10).map((item) => ({
+            title: item.title ?? '(untitled)',
+            link: item.link ?? '#',
+            source: src.name,
+            pubDate: item.isoDate ? new Date(item.isoDate) : item.pubDate ? new Date(item.pubDate) : null,
+          })),
+        };
+      } catch {
+        return { name: src.name, items: [] as NewsItem[] };
+      }
+    })
+  );
 
-const news: NewsItem[] = feedResults
-  .flatMap((r) => r.items)
-  .filter((i) => i.title && i.link !== '#')
-  .sort((a, b) => (b.pubDate?.valueOf() ?? 0) - (a.pubDate?.valueOf() ?? 0))
-  .slice(0, FEED_TOTAL_LIMIT);
+  const items: NewsItem[] = results
+    .flatMap((r) => r.items)
+    .filter((i) => i.title && i.link !== '#')
+    .sort((a, b) => (b.pubDate?.valueOf() ?? 0) - (a.pubDate?.valueOf() ?? 0))
+    .slice(0, totalLimit);
 
-const loadedSources = feedResults.filter((r) => r.items.length > 0).length;
+  return { items, loadedSources: results.filter((r) => r.items.length > 0).length, totalSources: sources.length };
+}
+
+const newsSection = await loadSection(NEWS_FEEDS, NEWS_TOTAL_LIMIT);
+const buildsSection = await loadSection(BUILDS_FEEDS, BUILDS_TOTAL_LIMIT);
+const news = newsSection.items;
+const builds = buildsSection.items;
 const builtAt = new Date();
 
 const todos = todosData.todos as Todo[];
@@ -86,10 +93,11 @@ const MUSE_URL = 'https://muse.ai';
     <header>
       <h1>Feed</h1>
       <p class="subtitle">
-        {loadedSources} of {FEED_SOURCES.length} sources · updated {builtAt.toLocaleString('en-SG', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })}
+        {newsSection.loadedSources + buildsSection.loadedSources} of {newsSection.totalSources + buildsSection.totalSources} sources · updated {builtAt.toLocaleString('en-SG', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })}
       </p>
       <div class="tabs" role="tablist">
         <button class="tab active" data-tab="news" role="tab">News <span class="count">{news.length}</span></button>
+        <button class="tab" data-tab="builds" role="tab">Built with Muse <span class="count">{builds.length}</span></button>
         <button class="tab" data-tab="todos" role="tab">Todos <span class="count">{openTodos.length}</span></button>
         <button class="tab" data-tab="done" role="tab">Done <span class="count">{doneTodos.length}</span></button>
       </div>
@@ -113,6 +121,32 @@ const MUSE_URL = 'https://muse.ai';
                   class="mini-btn"
                   data-muse-prompt={`Discuss this article with me: "${item.title}" — ${item.link}`}
                   data-muse-label="article prompt"
+                >✦ Discuss with Muse</button>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+    </section>
+
+    <!-- BUILT WITH Muse -->
+    <section id="tab-builds" class="tab-panel hidden">
+      {builds.length === 0 ? (
+        <p class="empty">Nothing found right now. Sources are fetched at build time — try rebuilding later.</p>
+      ) : (
+        <div class="news-list">
+          {builds.map((item) => (
+            <article class="news-card">
+              <div class="news-meta">
+                <span class="source">{item.source}</span>
+                {item.pubDate && <time>{timeAgo(item.pubDate)}</time>}
+              </div>
+              <a class="news-title" href={item.link} target="_blank" rel="noopener">{item.title}</a>
+              <div class="news-actions">
+                <button
+                  class="mini-btn"
+                  data-muse-prompt={`Someone built this with Muse/AI: "${item.title}" — ${item.link}. Tell me what it does and whether it's interesting.`}
+                  data-muse-label="build prompt"
                 >✦ Discuss with Muse</button>
               </div>
             </article>
@@ -178,6 +212,7 @@ const MUSE_URL = 'https://muse.ai';
     const tabs = document.querySelectorAll('.tab');
     const panels = {
       news: document.getElementById('tab-news'),
+      builds: document.getElementById('tab-builds'),
       todos: document.getElementById('tab-todos'),
       done: document.getElementById('tab-done'),
     };
