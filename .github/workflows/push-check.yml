@@ -6,6 +6,11 @@ on:
   schedule:
     - cron: '*/30 * * * *'
   workflow_dispatch:
+    inputs:
+      test:
+        description: 'Send a test push to all subscriptions'
+        type: boolean
+        default: false
 
 jobs:
   check:
@@ -24,3 +29,4 @@ jobs:
           VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT }}
           PUSH_ADMIN_URL: ${{ secrets.PUSH_ADMIN_URL }}
           PUSH_ADMIN_SECRET: ${{ secrets.PUSH_ADMIN_SECRET }}
+          SEND_TEST: ${{ inputs.test }}

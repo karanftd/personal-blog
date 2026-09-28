@@ -90,6 +90,36 @@ async function main() {
   const subscriptions = Array.isArray(subs) ? subs.filter((s) => s && s.endpoint) : [];
 
   const now = new Date();
+
+  // Manual test mode (workflow_dispatch with test=true): send a test push to
+  // every subscription and exit. Fails loudly if nobody is subscribed.
+  if (process.env.SEND_TEST === 'true') {
+    const testSubs = await adminGet('subscriptions').catch(() => []);
+    const live = Array.isArray(testSubs) ? testSubs.filter((s) => s && s.endpoint) : [];
+    console.log(`test mode: subscriptions=${live.length}`);
+    if (!live.length) {
+      console.error('no subscriptions — tap "Enable notifications" on /feed first');
+      process.exit(1);
+    }
+    const payload = JSON.stringify({
+      title: '🔔 Test from Sonu',
+      body: 'Web push is working — you’ll get pinged when new articles land.',
+      url: '/feed',
+      tag: 'push-test',
+    });
+    let ok = 0;
+    for (const sub of live) {
+      try {
+        await webpush.sendNotification({ endpoint: sub.endpoint, keys: sub.keys }, payload);
+        ok++;
+      } catch (e) {
+        console.log(`test send failed (${e.statusCode})`);
+      }
+    }
+    console.log(`test push sent to ${ok}/${live.length}`);
+    process.exit(0);
+  }
+
   if (!state) {
     // First run: seed state, don't blast notifications for old items.
     await adminPut('push_state', { lastCheck: now.toISOString(), seen: [] });
