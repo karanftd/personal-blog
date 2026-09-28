@@ -2,9 +2,12 @@
 // Fetches the feed sources, diffs against KV state, and sends Web Push
 // notifications to stored subscriptions for new items.
 //
+// State + subscriptions live in Cloudflare KV, reached through the site's own
+// /api/push-admin endpoint (so no Cloudflare API token is needed).
+//
 // Env required:
 //   VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT (e.g. "mailto:you@example.com")
-//   CF_ACCOUNT_ID, CF_API_TOKEN (Workers KV Storage: Edit), PUSH_KV_NAMESPACE_ID
+//   PUSH_ADMIN_URL (e.g. "https://karanftd.com"), PUSH_ADMIN_SECRET
 import webpush from 'web-push';
 import Parser from 'rss-parser';
 import fs from 'node:fs';
@@ -13,12 +16,11 @@ const {
   VAPID_PUBLIC_KEY,
   VAPID_PRIVATE_KEY,
   VAPID_SUBJECT,
-  CF_ACCOUNT_ID,
-  CF_API_TOKEN,
-  PUSH_KV_NAMESPACE_ID,
+  PUSH_ADMIN_URL,
+  PUSH_ADMIN_SECRET,
 } = process.env;
 
-for (const k of ['VAPID_PUBLIC_KEY', 'VAPID_PRIVATE_KEY', 'VAPID_SUBJECT', 'CF_ACCOUNT_ID', 'CF_API_TOKEN', 'PUSH_KV_NAMESPACE_ID']) {
+for (const k of ['VAPID_PUBLIC_KEY', 'VAPID_PRIVATE_KEY', 'VAPID_SUBJECT', 'PUSH_ADMIN_URL', 'PUSH_ADMIN_SECRET']) {
   if (!process.env[k]) {
     console.error(`missing env ${k}`);
     process.exit(1);
@@ -27,26 +29,22 @@ for (const k of ['VAPID_PUBLIC_KEY', 'VAPID_PRIVATE_KEY', 'VAPID_SUBJECT', 'CF_A
 
 webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 
-const KV_BASE = `https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/storage/kv/namespaces/${PUSH_KV_NAMESPACE_ID}/values`;
-const kvHeaders = { Authorization: `Bearer ${CF_API_TOKEN}` };
+const adminHeaders = { Authorization: `Bearer ${PUSH_ADMIN_SECRET}` };
 
-async function kvGet(key, fallback) {
-  const r = await fetch(`${KV_BASE}/${key}`, { headers: kvHeaders });
-  if (!r.ok) return fallback;
-  try {
-    return await r.json();
-  } catch {
-    return fallback;
-  }
+async function adminGet(key) {
+  const r = await fetch(`${PUSH_ADMIN_URL}/api/push-admin?key=${key}`, { headers: adminHeaders });
+  if (r.status === 401) throw new Error('push-admin: unauthorized (bad PUSH_ADMIN_SECRET?)');
+  if (!r.ok) throw new Error(`push-admin GET ${key}: ${r.status}`);
+  return (await r.json()).value;
 }
 
-async function kvPut(key, value) {
-  const r = await fetch(`${KV_BASE}/${key}`, {
+async function adminPut(key, value) {
+  const r = await fetch(`${PUSH_ADMIN_URL}/api/push-admin`, {
     method: 'PUT',
-    headers: { ...kvHeaders, 'content-type': 'application/json' },
-    body: JSON.stringify(value),
+    headers: { ...adminHeaders, 'content-type': 'application/json' },
+    body: JSON.stringify({ key, value }),
   });
-  if (!r.ok) throw new Error(`KV put ${key} failed: ${r.status}`);
+  if (!r.ok) throw new Error(`push-admin PUT ${key}: ${r.status}`);
 }
 
 // Pull { name, url } entries out of a named array in feeds.ts.
@@ -86,15 +84,15 @@ async function main() {
   ];
 
   const [subs, state] = await Promise.all([
-    kvGet('subscriptions', []),
-    kvGet('push_state', null),
+    adminGet('subscriptions').catch(() => []),
+    adminGet('push_state').catch(() => null),
   ]);
   const subscriptions = Array.isArray(subs) ? subs.filter((s) => s && s.endpoint) : [];
 
   const now = new Date();
   if (!state) {
     // First run: seed state, don't blast notifications for old items.
-    await kvPut('push_state', { lastCheck: now.toISOString(), seen: [] });
+    await adminPut('push_state', { lastCheck: now.toISOString(), seen: [] });
     console.log('seeded push_state; no subscriptions notified on first run');
     return;
   }
@@ -147,10 +145,10 @@ async function main() {
   }
 
   const liveSubs = subscriptions.filter((s) => !dead.has(s.endpoint));
-  if (dead.size) await kvPut('subscriptions', liveSubs);
+  if (dead.size) await adminPut('subscriptions', liveSubs);
 
   for (const it of fresh) seen.add(it.link);
-  await kvPut('push_state', {
+  await adminPut('push_state', {
     lastCheck: now.toISOString(),
     seen: [...seen].slice(-600),
   });
