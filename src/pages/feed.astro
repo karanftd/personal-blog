@@ -3,6 +3,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import Nav from '../components/Nav.astro';
 import Parser from 'rss-parser';
 import { NEWS_FEEDS, BUILDS_FEEDS, NEWS_TOTAL_LIMIT, BUILDS_TOTAL_LIMIT, type FeedSource } from '../data/feeds';
+import { VAPID_PUBLIC_KEY } from '../data/push';
 import todosData from '../data/todos.json';
 
 interface NewsItem {
@@ -95,6 +96,7 @@ const MUSE_URL = 'https://muse.ai';
       <p class="subtitle">
         {newsSection.loadedSources + buildsSection.loadedSources} of {newsSection.totalSources + buildsSection.totalSources} sources · updated {builtAt.toLocaleString('en-SG', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })}
       </p>
+      <button id="push-btn" class="push-btn" hidden>🔔 Enable notifications</button>
       <div class="tabs" role="tablist">
         <button class="tab active" data-tab="news" role="tab">News <span class="count">{news.length}</span></button>
         <button class="tab" data-tab="builds" role="tab">Built with Muse <span class="count">{builds.length}</span></button>
@@ -207,7 +209,65 @@ const MUSE_URL = 'https://muse.ai';
   <button id="muse-fab" class="fab" aria-label="Ask Muse">✦<span>Ask Muse</span></button>
   <div id="toast" class="toast" role="status"></div>
 
-  <script define:vars={{ MUSE_URL }}>
+  <script define:vars={{ MUSE_URL, VAPID_PUBLIC_KEY }}>
+    // Web Push subscription toggle
+    const pushBtn = document.getElementById('push-btn');
+    function vapidKey() {
+      const raw = atob(VAPID_PUBLIC_KEY.replace(/-/g, '+').replace(/_/g, '/'));
+      const bytes = new Uint8Array(raw.length);
+      for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+      return bytes;
+    }
+    async function refreshPushUI() {
+      if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) return;
+      pushBtn.hidden = false;
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.getSubscription();
+      if (Notification.permission === 'denied') {
+        pushBtn.textContent = '🔕 Notifications blocked in browser settings';
+        pushBtn.disabled = true;
+        return;
+      }
+      pushBtn.disabled = false;
+      pushBtn.textContent = sub ? '🔔 Notifications on — tap to disable' : '🔔 Enable notifications';
+      pushBtn.onclick = async () => {
+        pushBtn.disabled = true;
+        try {
+          if (sub) {
+            await sub.unsubscribe();
+            await fetch('/api/subscribe', {
+              method: 'DELETE',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ endpoint: sub.endpoint }),
+            });
+            showToast('Notifications disabled');
+          } else {
+            const permission = await Notification.requestPermission();
+            if (permission !== 'granted') {
+              showToast('Notification permission not granted');
+              return;
+            }
+            const newSub = await reg.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: vapidKey(),
+            });
+            const res = await fetch('/api/subscribe', {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify(newSub),
+            });
+            if (!res.ok) throw new Error('server rejected subscription');
+            showToast('You’ll get notified about new articles 🔔');
+          }
+        } catch (e) {
+          console.error(e);
+          showToast('Could not change notification settings');
+        } finally {
+          refreshPushUI();
+        }
+      };
+    }
+
     // Tabs
     const tabs = document.querySelectorAll('.tab');
     const panels = {
@@ -270,6 +330,8 @@ const MUSE_URL = 'https://muse.ai';
         navigator.serviceWorker.register('/sw.js').catch(() => {});
       });
     }
+
+    refreshPushUI();
   </script>
 
   <style>
@@ -292,6 +354,22 @@ const MUSE_URL = 'https://muse.ai';
       font-size: 0.85rem;
       color: var(--color-subtle);
     }
+
+    .push-btn {
+      font-family: inherit;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--color-text);
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 50px;
+      padding: 0.45rem 1rem;
+      margin-top: 0.9rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .push-btn:hover:not(:disabled) { border-color: #ffff00; color: #ffff00; }
+    .push-btn:disabled { opacity: 0.6; cursor: default; }
 
     .tabs {
       display: flex;
