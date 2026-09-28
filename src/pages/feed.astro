@@ -218,8 +218,29 @@ const MUSE_URL = 'https://muse.ai';
       for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
       return bytes;
     }
+    // iOS only allows Web Push for Home-Screen-installed web apps (16.4+),
+    // so in a plain Safari tab the Push API is unavailable — guide instead of hiding.
+    function isIOS() {
+      return /iPhone|iPad|iPod/.test(navigator.userAgent) ||
+        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    }
+    function isStandalone() {
+      return window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+    }
+    function iosGuidance() {
+      showToast('On iPhone: tap Share → Add to Home Screen, then open the Feed app from your Home Screen');
+    }
     async function refreshPushUI() {
-      if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) return;
+      const supported = ('serviceWorker' in navigator) && ('PushManager' in window) && ('Notification' in window);
+      if (!supported) {
+        if (isIOS() && !isStandalone()) {
+          pushBtn.hidden = false;
+          pushBtn.disabled = false;
+          pushBtn.textContent = '🔔 Enable notifications';
+          pushBtn.onclick = iosGuidance;
+        }
+        return;
+      }
       pushBtn.hidden = false;
       const reg = await navigator.serviceWorker.ready;
       const sub = await reg.pushManager.getSubscription();
@@ -261,7 +282,8 @@ const MUSE_URL = 'https://muse.ai';
           }
         } catch (e) {
           console.error(e);
-          showToast('Could not change notification settings');
+          if (isIOS() && !isStandalone()) iosGuidance();
+          else showToast('Could not change notification settings');
         } finally {
           refreshPushUI();
         }
