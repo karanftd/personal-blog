@@ -15,7 +15,8 @@
   },
   "dependencies": {
     "@astrojs/cloudflare": "^13.6.0",
-    "astro": "^6.4.2"
+    "astro": "^6.4.2",
+    "rss-parser": "^3.13.0"
   },
   "devDependencies": {
     "wrangler": "^4.95.0"

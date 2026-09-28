@@ -1,0 +1,420 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Nav from '../components/Nav.astro';
+import Parser from 'rss-parser';
+import { FEED_SOURCES, FEED_TOTAL_LIMIT } from '../data/feeds';
+import todosData from '../data/todos.json';
+
+interface NewsItem {
+  title: string;
+  link: string;
+  source: string;
+  pubDate: Date | null;
+}
+
+interface Todo {
+  id: string;
+  title: string;
+  status: 'todo' | 'doing' | 'done';
+  createdAt: string;
+  completedAt?: string;
+  source?: string;
+  notes?: string;
+}
+
+const parser = new Parser({ timeout: 15000 });
+
+// Fetch all feeds in parallel; a failing source is skipped, never fatal.
+const feedResults = await Promise.all(
+  FEED_SOURCES.map(async (src) => {
+    try {
+      // NB: use global fetch + parseString, not parser.parseURL —
+      // rss-parser's parseURL uses node:http, which breaks in the
+      // Cloudflare Workers prerender environment.
+      const res = await fetch(src.url, {
+        headers: { 'user-agent': 'karanftd-feed/1.0 (+https://karanftd.com/feed)' },
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const feed = await parser.parseString(await res.text());
+      return {
+        name: src.name,
+        items: (feed.items || []).slice(0, src.limit ?? 10).map((item) => ({
+          title: item.title ?? '(untitled)',
+          link: item.link ?? '#',
+          source: src.name,
+          pubDate: item.isoDate ? new Date(item.isoDate) : item.pubDate ? new Date(item.pubDate) : null,
+        })),
+      };
+    } catch {
+      return { name: src.name, items: [] as NewsItem[] };
+    }
+  })
+);
+
+const news: NewsItem[] = feedResults
+  .flatMap((r) => r.items)
+  .filter((i) => i.title && i.link !== '#')
+  .sort((a, b) => (b.pubDate?.valueOf() ?? 0) - (a.pubDate?.valueOf() ?? 0))
+  .slice(0, FEED_TOTAL_LIMIT);
+
+const loadedSources = feedResults.filter((r) => r.items.length > 0).length;
+const builtAt = new Date();
+
+const todos = todosData.todos as Todo[];
+const openTodos = todos.filter((t) => t.status !== 'done');
+const doneTodos = todos.filter((t) => t.status === 'done')
+  .sort((a, b) => (b.completedAt ?? '').localeCompare(a.completedAt ?? ''));
+
+function timeAgo(d: Date | null): string {
+  if (!d || isNaN(d.valueOf())) return '';
+  const mins = Math.floor((Date.now() - d.valueOf()) / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return `${days}d ago`;
+  return d.toLocaleDateString('en-SG', { day: 'numeric', month: 'short' });
+}
+
+const MUSE_URL = 'https://muse.ai';
+---
+
+<BaseLayout title="Feed – Karan Bhalodiya" description="Personal news feed, todos and work tracker.">
+  <Nav active="feed" />
+  <main>
+    <header>
+      <h1>Feed</h1>
+      <p class="subtitle">
+        {loadedSources} of {FEED_SOURCES.length} sources · updated {builtAt.toLocaleString('en-SG', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })}
+      </p>
+      <div class="tabs" role="tablist">
+        <button class="tab active" data-tab="news" role="tab">News <span class="count">{news.length}</span></button>
+        <button class="tab" data-tab="todos" role="tab">Todos <span class="count">{openTodos.length}</span></button>
+        <button class="tab" data-tab="done" role="tab">Done <span class="count">{doneTodos.length}</span></button>
+      </div>
+    </header>
+
+    <!-- NEWS -->
+    <section id="tab-news" class="tab-panel">
+      {news.length === 0 ? (
+        <p class="empty">No articles could be loaded right now. Sources are fetched at build time — try rebuilding later.</p>
+      ) : (
+        <div class="news-list">
+          {news.map((item) => (
+            <article class="news-card">
+              <div class="news-meta">
+                <span class="source">{item.source}</span>
+                {item.pubDate && <time>{timeAgo(item.pubDate)}</time>}
+              </div>
+              <a class="news-title" href={item.link} target="_blank" rel="noopener">{item.title}</a>
+              <div class="news-actions">
+                <button
+                  class="mini-btn"
+                  data-muse-prompt={`Discuss this article with me: "${item.title}" — ${item.link}`}
+                  data-muse-label="article prompt"
+                >✦ Discuss with Muse</button>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+    </section>
+
+    <!-- TODOS -->
+    <section id="tab-todos" class="tab-panel hidden">
+      {openTodos.length === 0 ? (
+        <p class="empty">All clear. Tell Muse to add something here whenever a task comes up.</p>
+      ) : (
+        <div class="todo-list">
+          {openTodos.map((t) => (
+            <div class="todo-card">
+              <div class="todo-top">
+                <span class={`pill pill-${t.status}`}>{t.status === 'doing' ? 'in progress' : 'todo'}</span>
+                {t.source && <span class="todo-source">{t.source}</span>}
+              </div>
+              <p class="todo-title">{t.title}</p>
+              {t.notes && <p class="todo-notes">{t.notes}</p>}
+              <div class="news-actions">
+                <button
+                  class="mini-btn"
+                  data-muse-prompt={`About my todo "${t.title}" (id: ${t.id}, status: ${t.status}) — take action on it.`}
+                  data-muse-label="todo prompt"
+                >✦ Ask Muse</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      <p class="hint">To add, edit, or finish a todo, hit the Muse button and just say what you want — it updates this page on the next deploy.</p>
+    </section>
+
+    <!-- DONE -->
+    <section id="tab-done" class="tab-panel hidden">
+      {doneTodos.length === 0 ? (
+        <p class="empty">Nothing finished yet. Completed todos land here automatically.</p>
+      ) : (
+        <div class="todo-list">
+          {doneTodos.map((t) => (
+            <div class="todo-card done">
+              <div class="todo-top">
+                <span class="pill pill-done">done</span>
+                {t.completedAt && <time>{t.completedAt}</time>}
+              </div>
+              <p class="todo-title">{t.title}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  </main>
+
+  <!-- Ask Muse floating button -->
+  <button id="muse-fab" class="fab" aria-label="Ask Muse">✦<span>Ask Muse</span></button>
+  <div id="toast" class="toast" role="status"></div>
+
+  <script define:vars={{ MUSE_URL }}>
+    // Tabs
+    const tabs = document.querySelectorAll('.tab');
+    const panels = {
+      news: document.getElementById('tab-news'),
+      todos: document.getElementById('tab-todos'),
+      done: document.getElementById('tab-done'),
+    };
+    tabs.forEach((tab) => {
+      tab.addEventListener('click', () => {
+        tabs.forEach((t) => t.classList.remove('active'));
+        tab.classList.add('active');
+        Object.entries(panels).forEach(([key, el]) => {
+          el.classList.toggle('hidden', key !== tab.dataset.tab);
+        });
+        // Deep-link the active tab so the home-screen icon can open straight to todos if wanted
+        history.replaceState(null, '', '#' + tab.dataset.tab);
+      });
+    });
+
+    // Open a deep-linked tab on load (e.g. /feed#todos)
+    (function () {
+      const hash = location.hash.replace('#', '');
+      const target = document.querySelector(`.tab[data-tab="${hash}"]`);
+      if (target) target.click();
+    })();
+
+    // Toast
+    const toast = document.getElementById('toast');
+    let toastTimer;
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 2600);
+    }
+
+    // "Send to Muse" buttons: copy a ready-made prompt, then open Muse.
+    document.querySelectorAll('[data-muse-prompt]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const prompt = btn.getAttribute('data-muse-prompt');
+        try {
+          await navigator.clipboard.writeText(prompt);
+          showToast('Prompt copied — paste it into Muse ✦');
+        } catch {
+          showToast('Opening Muse — tell me what you want to do ✦');
+        }
+        window.open(MUSE_URL, '_blank', 'noopener');
+      });
+    });
+
+    // FAB: straight to Muse
+    document.getElementById('muse-fab').addEventListener('click', () => {
+      window.open(MUSE_URL, '_blank', 'noopener');
+    });
+
+    // Register service worker (feed PWA)
+    if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
+      });
+    }
+  </script>
+
+  <style>
+    main {
+      position: relative;
+      z-index: 1;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 1.5rem 7rem;
+    }
+    header { padding: 2.5rem 0 1.5rem; }
+    h1 {
+      font-size: 2.25rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: var(--color-text);
+    }
+    .subtitle {
+      margin-top: 0.5rem;
+      font-size: 0.85rem;
+      color: var(--color-subtle);
+    }
+
+    .tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 1.25rem;
+    }
+    .tab {
+      font-family: inherit;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--color-muted);
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 50px;
+      padding: 0.5rem 1.1rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .tab:hover { color: #ffff00; }
+    .tab.active {
+      background: #ffff00;
+      color: #000;
+      border-color: #ffff00;
+    }
+    .count {
+      font-size: 0.72rem;
+      opacity: 0.75;
+      margin-left: 0.25rem;
+    }
+
+    .tab-panel.hidden { display: none; }
+    .empty {
+      color: var(--color-muted);
+      font-size: 0.925rem;
+      padding: 2.5rem 1rem;
+      text-align: center;
+    }
+
+    .news-list, .todo-list { display: flex; flex-direction: column; gap: 0.9rem; }
+
+    .news-card, .todo-card {
+      background: var(--glass-bg);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--glass-shadow);
+      border-radius: 16px;
+      padding: 1.25rem 1.4rem;
+    }
+    .news-meta, .todo-top {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+      margin-bottom: 0.5rem;
+    }
+    .source, .todo-source {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #ffff00;
+    }
+    time { font-size: 0.76rem; color: var(--color-subtle); }
+
+    .news-title {
+      display: block;
+      font-size: 1.02rem;
+      font-weight: 600;
+      color: var(--color-text);
+      line-height: 1.4;
+      margin-bottom: 0.75rem;
+    }
+    .news-title:hover { color: #ffff00; text-decoration: none; }
+
+    .news-actions { display: flex; gap: 0.5rem; }
+    .mini-btn {
+      font-family: inherit;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--color-accent-2);
+      background: rgba(0, 212, 255, 0.08);
+      border: 1px solid rgba(0, 212, 255, 0.25);
+      border-radius: 50px;
+      padding: 0.35rem 0.85rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .mini-btn:hover {
+      background: rgba(0, 212, 255, 0.18);
+      box-shadow: 0 0 12px rgba(0, 212, 255, 0.25);
+    }
+
+    .pill {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 0.2rem 0.7rem;
+      border-radius: 50px;
+    }
+    .pill-todo { background: rgba(255,255,0,0.1); color: #ffff00; border: 1px solid rgba(255,255,0,0.3); }
+    .pill-doing { background: rgba(0,212,255,0.1); color: #00d4ff; border: 1px solid rgba(0,212,255,0.3); }
+    .pill-done { background: rgba(0,255,136,0.1); color: #00ff88; border: 1px solid rgba(0,255,136,0.3); }
+
+    .todo-title { font-size: 0.98rem; font-weight: 600; color: var(--color-text); line-height: 1.45; margin-bottom: 0.75rem; }
+    .todo-notes { font-size: 0.85rem; color: var(--color-muted); margin: -0.4rem 0 0.75rem; line-height: 1.55; }
+    .todo-card.done .todo-title { color: var(--color-muted); text-decoration: line-through; text-decoration-color: rgba(0,255,136,0.5); }
+
+    .hint {
+      margin-top: 1.5rem;
+      font-size: 0.82rem;
+      color: var(--color-subtle);
+      text-align: center;
+      line-height: 1.6;
+    }
+
+    /* Floating Muse button */
+    .fab {
+      position: fixed;
+      right: 1.25rem;
+      bottom: 1.5rem;
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #000;
+      background: #ffff00;
+      border: none;
+      border-radius: 50px;
+      padding: 0.85rem 1.4rem;
+      cursor: pointer;
+      box-shadow: 0 8px 28px rgba(255, 255, 0, 0.35);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .fab:hover { transform: translateY(-2px); box-shadow: 0 12px 34px rgba(255, 255, 0, 0.45); }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 5.5rem;
+      transform: translateX(-50%) translateY(10px);
+      z-index: 300;
+      background: rgba(20, 20, 45, 0.95);
+      border: 1px solid rgba(255, 255, 0, 0.3);
+      color: var(--color-text);
+      font-size: 0.85rem;
+      font-weight: 500;
+      padding: 0.7rem 1.25rem;
+      border-radius: 50px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s, transform 0.2s;
+      white-space: nowrap;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
+</BaseLayout>

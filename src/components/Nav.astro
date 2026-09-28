@@ -4,6 +4,7 @@ const { active } = Astro.props;
 
 <nav class="site-nav">
   <a href="/" class={active === 'home' ? 'nav-link active' : 'nav-link'}>Home</a>
+  <a href="/feed" class={active === 'feed' ? 'nav-link active' : 'nav-link'}>Feed</a>
   <a href="/resume" class={active === 'resume' ? 'nav-link nav-link--resume active' : 'nav-link nav-link--resume'}>Resume</a>
   <button
     data-cal-link="karanftd"
